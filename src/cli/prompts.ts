@@ -30,48 +30,14 @@ export function ask(
   });
 }
 
-/** 提示用户输入密码（不显示输入内容） */
+/** 提示用户输入密码（明文输入） */
 export function askPassword(question: string): Promise<string> {
   return new Promise((resolve) => {
     const r = rl();
-    // 隐藏输入
-    const stdin = process.stdin;
-    if (stdin.isTTY) {
-      stdin.setRawMode(true);
-    }
-
-    process.stdout.write(`${question}: `);
-
-    let password = "";
-    const onData = (buf: Buffer) => {
-      const char = buf.toString();
-
-      if (char === "\n" || char === "\r" || char === "\r\n") {
-        if (stdin.isTTY) {
-          stdin.setRawMode(false);
-        }
-        stdin.removeListener("data", onData);
-        process.stdout.write("\n");
-        r.close();
-        resolve(password);
-      } else if (char === "\u007F" || char === "\b") {
-        // Backspace
-        if (password.length > 0) {
-          password = password.slice(0, -1);
-          process.stdout.write("\b \b");
-        }
-      } else if (char === "\u0003") {
-        // Ctrl+C
-        process.stdout.write("\n");
-        process.exit(0);
-      } else {
-        password += char;
-        process.stdout.write("*");
-      }
-    };
-
-    stdin.on("data", onData);
-    stdin.resume();
+    r.question(`${question}: `, (answer) => {
+      r.close();
+      resolve(answer.trim());
+    });
   });
 }
 
